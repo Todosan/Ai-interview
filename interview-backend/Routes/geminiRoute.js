@@ -23,7 +23,7 @@ router.post('/start-interview', async (req, res) => {
         }
 
         const prompt = generatePrompt(role, userResponse, questionCount, SENIOR_PROFESSIONAL_PROMPT);
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const result = await model.generateContent(prompt);
         const response = result.response.text();
 
@@ -43,11 +43,20 @@ router.post('/get-feedback', async (req, res) => {
         validateResponses(responses);
 
         const prompt = `
-            ${SENIOR_PROFESSIONAL_PROMPT}
-            You are generating feedback for a ${role} interview. 
-            Responses: ${JSON.stringify(responses)}
-            Provide professional feedback as a JSON object with strengths, improvements, and a rating.
-        `;
+        ${SENIOR_PROFESSIONAL_PROMPT}
+        You are generating feedback for a ${role} interview. 
+        Responses: ${JSON.stringify(responses)}
+        Please provide ONLY the following JSON structure:
+    
+        {
+            "overallFeedback": "string",
+            "strengths": ["string"],
+            "improvements": ["string"],
+            "rating": number,
+            "conclusion": "string"
+        }
+    `;
+    
 
         const model = genAI.getGenerativeModel({ model: "gemini-pro" });
         const result = await model.generateContent(prompt);

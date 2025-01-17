@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { JobTitleInput } from './components/JobTitleInput';
 import { ChatMessage } from './components/ChatMessage';
 import { ChatInput } from './components/ChatInput';
@@ -13,6 +13,7 @@ const initialState = (): InterviewState => ({
   feedback: null,
   questionCount: 0,
 });
+
 
 function App() {
   const [state, setState] = useState<InterviewState>(initialState());
@@ -48,10 +49,9 @@ function App() {
     setState((prev) => ({
       ...prev,
       messages: [...prev.messages, { role: 'user', content: message }],
-      isLoading: true, // Optional: Flag for loading
+      isLoading: true,
     }));
   
-    // Send the response to the API
     try {
       const response = await fetch('/api/gemini/start-interview', {
         method: 'POST',
@@ -66,18 +66,24 @@ function App() {
       if (response.ok) {
         const data = await response.json();
   
+        const isLastQuestion = state.questionCount + 1 >= 6; // Assuming 6 questions max
         setState((prev) => ({
           ...prev,
           isLoading: false,
           questionCount: prev.questionCount + 1,
           messages: [...prev.messages, { role: 'assistant', content: data.message }],
         }));
+  
+        if (isLastQuestion) {
+          setReadyForFeedback(true); // Allow feedback button to appear
+        }
       }
     } catch (error) {
       console.error('Error:', error);
       setState((prev) => ({ ...prev, isLoading: false }));
     }
   };
+  
   
   const handleViewFeedback = async () => {
     try {
@@ -108,10 +114,26 @@ function App() {
     if (!state.jobTitle) {
       return <JobTitleInput onSubmit={handleStartInterview} />;
     }
-
+  
     if (state.isComplete && state.feedback) {
+      // Ensure that strengths and improvements are arrays (even if they're empty)
+      const transformedFeedback = {
+        ...state.feedback,
+        strengths: (state.feedback.strengths || []).map((strength) => ({
+          strength,
+          proverb: '', // Add an empty proverb as a placeholder
+        })),
+        improvements: (state.feedback.improvements || []).map((improvement) => ({
+          improvement,
+          proverb: '', // Add an empty proverb as a placeholder
+        })),
+      };
+  
       return (
-        <InterviewFeedback feedback={state.feedback} onRestart={handleRestart} />
+        <InterviewFeedback
+          feedback={transformedFeedback} // Pass the transformed feedback here
+          onRestart={handleRestart}
+        />
       );
     }
 
@@ -133,12 +155,11 @@ function App() {
           </button>
         ) : (
           <ChatInput 
-  onSubmit={handleSubmitResponse} 
-  disabled={state.isLoading} 
-  questionCount={state.questionCount} 
-  maxQuestions={6} 
-/>
-
+              onSubmit={handleSubmitResponse} 
+              disabled={state.isLoading} 
+              questionCount={state.questionCount} 
+              maxQuestions={6} 
+            />
         )}
       </div>
     );

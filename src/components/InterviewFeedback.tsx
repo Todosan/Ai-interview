@@ -1,5 +1,4 @@
 import React from 'react';
-import { CheckCircle, RefreshCcw, Star } from 'lucide-react';
 
 interface InterviewFeedback {
   feedback: {
